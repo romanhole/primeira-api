@@ -1,0 +1,23 @@
+{
+  "name": "primeira-api",
+  "version": "1.0.0",
+  "description": "minha primeira api",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romanhole/primeira-api.git"
+  },
+  "keywords": [
+    "primeira",
+    "api"
+  ],
+  "author": "Romanhole",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/romanhole/primeira-api/issues"
+  },
+  "homepage": "https://github.com/romanhole/primeira-api#readme"
+}
