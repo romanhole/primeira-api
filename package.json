@@ -21,5 +21,6 @@
   "bugs": {
     "url": "https://github.com/romanhole/primeira-api/issues"
   },
-  "homepage": "https://github.com/romanhole/primeira-api#readme"
+  "homepage": "https://github.com/romanhole/primeira-api#readme",
+  "type": "module"
 }
