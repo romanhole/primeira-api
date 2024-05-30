@@ -24,6 +24,7 @@
   "homepage": "https://github.com/romanhole/primeira-api#readme",
   "type": "module",
   "dependencies": {
+    "sequelize": "^6.37.3",
     "sqlite3": "^5.1.7"
   }
 }
