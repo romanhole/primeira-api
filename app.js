@@ -2,20 +2,7 @@ import http from 'http'
 import fs from 'fs'
 import rotas from './routes.js'
 import sqlite3 from 'sqlite3'
-import { Sequelize } from 'sequelize'
-
-const sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: './tic.db'
-})
-
-sequelize.authenticate()
-    .then(() => {
-        console.log('Conexão com o banco de dados realizada com sucesso')
-    })
-    .catch((erro) => {
-        console.log('Falha ao conectar com o banco de dados', erro)
-    })
+import { sequelize, criaProduto, leProdutos } from './models.js'
 
 const db = new sqlite3.Database('./tic.db', (erro) => {
     if (erro) {
@@ -44,7 +31,13 @@ fs.readFile('./mensagem.txt', 'utf-8', (erro, conteudo) => {
     iniciaServidorHttp(conteudo)
 })
 
-function iniciaServidorHttp(mensagem) {
+async function iniciaServidorHttp(mensagem) {
+    await sequelize.sync()
+
+    await criaProduto({ nome: 'Açaí Tradicional', preco: 10.50 })
+    await criaProduto({ nome: 'Açaí com Granola', preco: 12.50 })
+    await leProdutos()
+
     const servidor = http.createServer((req, res) => {
         rotas(req, res, { mensagem })
     })
