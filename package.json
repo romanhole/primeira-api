@@ -22,5 +22,8 @@
     "url": "https://github.com/romanhole/primeira-api/issues"
   },
   "homepage": "https://github.com/romanhole/primeira-api#readme",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "sqlite3": "^5.1.7"
+  }
 }
