@@ -1,63 +1,41 @@
-import http from 'http'
-import fs from 'fs'
-import rotas from './routes.js'
 import sqlite3 from 'sqlite3'
-import { sequelize, criaPedido, lePedidos } from './models.js'
+import express from 'express'
 
-const db = new sqlite3.Database('./tic.db', (erro) => {
-    if (erro) {
-        console.log('Falha ao inicializar o banco de dados')
-        return
-    }
-    console.log('Banco de dados inicialixado com sucesso')
+
+import { sequelize } from './models.js'
+
+const app = express()
+
+app.use((req, res, next) => {
+    console.log('Digite 9 para falar com o atendente')
+    next()
 })
 
-fs.writeFile('./mensagem.txt', 'Olá TIC em Trilhas do arquivo', 'utf-8', (erro) => {
-    if (erro) {
-        console.log('Falha ao escrever o arquivo', erro)
-        return
-    }
-    console.log('Arquivo criado com sucesso')
+app.use((req, res, next) => {
+    console.log('Problema resolvido')
+    res.send({ 
+        mensagem: 'Problema resolvido'
+    })
 })
 
-fs.readFile('./mensagem.txt', 'utf-8', (erro, conteudo) => {
-    if (erro) {
-        console.log('Falha na leitura do arquivo', erro)
-        return
-    }
-
-    console.log(`Conteúdo: ${conteudo}`)
-
-    iniciaServidorHttp(conteudo)
+app.use((req, res, next) => {
+    console.log('Segue o link para baixar o driver atualizado')
 })
 
-async function iniciaServidorHttp(mensagem) {
+async function inicializaApp() {
+    const db = new sqlite3.Database('./tic.db', (erro) => {
+        if (erro) {
+            console.log('Falha ao inicializar o banco de dados')
+            return
+        }
+        console.log('Banco de dados inicialixado com sucesso')
+    })
+
     await sequelize.sync()
-
-    await criaPedido({
-        valorTotal: 13.00,
-        produtos: [
-            {
-                id: 2,
-                quantidade: 1
-            },
-            {
-                id: 4,
-                quantidade: 2
-            },
-        ]
-    })
-
-    await lePedidos()
-
-    const servidor = http.createServer((req, res) => {
-        rotas(req, res, { mensagem })
-    })
     
     const porta = 3000
-    const host = 'localhost'
     
-    servidor.listen(porta, host, () => {
-        console.log(`Servidor executando em http://${host}:${porta}/`)
-    })
+    app.listen(porta)
 }
+
+inicializaApp()
