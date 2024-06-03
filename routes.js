@@ -1,6 +1,7 @@
 import fs from 'fs'
+import { sequelize, criaProduto, leProdutos, leProdutoPorId, atualizaProdutoPorId, deletaProdutoPorId } from './models.js'
 
-export default function rotas(req, res, dado) {
+export default async function rotas(req, res, dado) {
     res.setHeader('Content-type', 'application/json; utf-8')
 
     if(req.method === 'GET' && req.url === '/') {
@@ -17,19 +18,19 @@ export default function rotas(req, res, dado) {
         return
     }
 
-    if(req.method === 'PUT' && req.url === '/arquivos') {
+    if(req.method === 'POST' && req.url === '/produtos') {
         const corpo = []
 
         req.on('data', (parte) => {
             corpo.push(parte)
         })
 
-        req.on('end', () => {
-            const arquivo = JSON.parse(corpo)
+        req.on('end', async () => {
+            const produto = JSON.parse(corpo)
 
             res.statusCode = 400
 
-            if(!arquivo?.nome) {
+            if(!produto?.nome) {
                 const resposta = {
                     erro: {
                         mensagem: `O atributo 'nome' é obrigatório, porém não foi encontrado`
@@ -41,33 +42,41 @@ export default function rotas(req, res, dado) {
                 return
             }
 
-            fs.writeFile(`./${arquivo.nome}.txt`, arquivo?.conteudo ?? '', 'utf-8', (erro) => {
-                if(erro) {
-                    console.log('Falha ao criar o arquivo', erro)
+            if(!produto?.preco) {
+                const resposta = {
+                    erro: {
+                        mensagem: `O atributo 'preco' é obrigatório, porém não foi encontrado`
+                    }
+                }
+
+                res.end(JSON.stringify(resposta))
+
+                return
+            }
+
+            try {
+                const resposta = await criaProduto(produto)
+
+                res.statusCode = 201
+
+                res.end(JSON.stringify(resposta))
+
+                return
+            } catch(erro) {
+                console.log('Falha ao criar o produto', erro)
 
                     res.statusCode = 500
 
                     const resposta = {
                         erro: {
-                            mensagem: `Falha ao criar o arquivo ${arquivo.nome}`,
+                            mensagem: `Falha ao criar o produto ${produto.nome}`,
                         }
                     }
 
                     res.end(JSON.stringify(resposta))
 
                     return
-                }
-
-                res.statusCode = 201
-
-                const resposta = {
-                    mensagem: `Arquivo ${arquivo.nome} criado com sucesso`
-                }
-
-                res.end(JSON.stringify(resposta))
-
-                return
-            })
+            }
         })
 
         req.on('error', (erro) => {
@@ -89,22 +98,22 @@ export default function rotas(req, res, dado) {
         return
     }
 
-    if(req.method === 'PATCH' && req.url === '/arquivos') {
+    if(req.method === 'PATCH' && req.url.split('/')[1] === '/produtos' && !isNaN(req.url.split('/')[2])) {
         const corpo = []
 
         req.on('data', (parte) => {
             corpo.push(parte)
         })
 
-        req.on('end', () => {
-            const arquivo = JSON.parse(corpo)
+        req.on('end', async () => {
+            const produto = JSON.parse(corpo)
 
             res.statusCode = 400
 
-            if(!arquivo?.nome) {
+            if(!produto?.nome && !produto.preco) {
                 const resposta = {
                     erro: {
-                        mensagem: `O atributo 'nome' é obrigatório, porém não foi encontrado`
+                        mensagem: `Nenhum atributo foi encontrado, porém pelo menos um é obrigatório para a atualização`
                     }
                 }
 
@@ -113,10 +122,24 @@ export default function rotas(req, res, dado) {
                 return
             }
 
-            if(!arquivo?.conteudo) {
+            const id = req.url.split('/')[2]
+
+            try {
+                const resposta = await atualizaProdutoPorId(id, produto)
+
+                res.statusCode = 200
+
+                res.end(JSON.stringify(resposta))
+
+                return
+            } catch(erro) {
+                console.log('Falha ao atualizar o produto', erro)
+    
+                res.statusCode = 500
+
                 const resposta = {
                     erro: {
-                        mensagem: `O atributo 'conteudo' é obrigatório, porém não foi encontrado`
+                        mensagem: `Falha ao atualizar o produto ${produto.nome}`,
                     }
                 }
 
@@ -124,52 +147,6 @@ export default function rotas(req, res, dado) {
 
                 return
             }
-
-            fs.access(`${arquivo.nome}.txt`, fs.constants.W_OK, (erro) => {
-                if(erro) {
-                    console.log('Falha ao acessar o arquivo', erro)
-
-                    res.statusCode = erro.code === 'ENOENT' ? 404 : 403
-
-                    const resposta = {
-                        erro: {
-                            mensagem: `Falha ao acessar arquivo ${arquivo.nome}`
-                        }
-                    }
-
-                    res.end(JSON.stringify(resposta))
-
-                    return
-                }
-
-                fs.appendFile(`./${arquivo.nome}.txt`, `\n${arquivo.conteudo}`, 'utf-8', (erro) => {
-                    if(erro) {
-                        console.log('Falha ao atualizar o arquivo', erro)
-    
-                        res.statusCode = 500
-    
-                        const resposta = {
-                            erro: {
-                                mensagem: `Falha ao atualizar o arquivo ${arquivo.nome}`,
-                            }
-                        }
-    
-                        res.end(JSON.stringify(resposta))
-    
-                        return
-                    }
-    
-                    res.statusCode = 200
-    
-                    const resposta = {
-                        mensagem: `Arquivo ${arquivo.nome} atualizado com sucesso`
-                    }
-    
-                    res.end(JSON.stringify(resposta))
-    
-                    return
-                })
-            })
         })
 
         req.on('error', (erro) => {
@@ -192,95 +169,64 @@ export default function rotas(req, res, dado) {
         return
     }
 
-    if(req.method === 'DELETE' && req.url === '/arquivos') {
-        const corpo = []
+    if(req.method === 'DELETE' && req.url.split('/')[1] === '/produtos' && !isNaN(req.url.split('/')[2])) {
+        const id = req.url.split('/')[2]
 
-        req.on('data', (parte) => {
-            corpo.push(parte)
-        })
+        try {
+            const resposta = await deletaProdutoPorId(id)
 
-        req.on('end', () => {
-            const arquivo = JSON.parse(corpo)
+            res.statusCode = 204
 
-            res.statusCode = 400
+            res.end()
 
-            if(!arquivo?.nome) {
+            return
+        } catch(erro) {
+            if(erro) {
+                console.log('Falha ao remover o produto', erro)
+    
+                res.statusCode = 500
+    
                 const resposta = {
                     erro: {
-                        mensagem: `O atributo 'nome' é obrigatório, porém não foi encontrado`
+                        mensagem: `Falha ao remover o produto ${produto.nome}`,
                     }
                 }
-
+    
                 res.end(JSON.stringify(resposta))
-
+    
                 return
             }
+        }
+    }
 
-            fs.access(`${arquivo.nome}.txt`, fs.constants.W_OK, (erro) => {
-                if(erro) {
-                    console.log('Falha ao remover o arquivo', erro)
+    if(req.method === 'GET' && req.url.split('/')[1] === '/produtos' && !isNaN(req.url.split('/')[2])) {
+        const id = req.url.split('/')[2]
 
-                    res.statusCode = erro.code === 'ENOENT' ? 404 : 403
+        try {
+            const resposta = await leProdutoPorId(id)
 
-                    const resposta = {
-                        erro: {
-                            mensagem: `Falha ao remover arquivo ${arquivo.nome}`
-                        }
-                    }
-
-                    res.end(JSON.stringify(resposta))
-
-                    return
-                }
-
-                fs.rm(`./${arquivo.nome}.txt`, (erro) => {
-                    if(erro) {
-                        console.log('Falha ao remover o arquivo', erro)
-    
-                        res.statusCode = 500
-    
-                        const resposta = {
-                            erro: {
-                                mensagem: `Falha ao remover o arquivo ${arquivo.nome}`,
-                            }
-                        }
-    
-                        res.end(JSON.stringify(resposta))
-    
-                        return
-                    }
-    
-                    res.statusCode = 200
-    
-                    const resposta = {
-                        mensagem: `Arquivo ${arquivo.nome} removido com sucesso`
-                    }
-    
-                    res.end(JSON.stringify(resposta))
-    
-                    return
-                })
-            })
-        })
-
-        req.on('error', (erro) => {
-            console.log('Falha ao processar a requisição', erro)
-
-            res.statusCode = 400
-
-            const resposta = {
-                erro: {
-                    mensagem: 'Falha ao processar a requisição'
-                }
-            }
+            res.statusCode = 200
 
             res.end(JSON.stringify(resposta))
 
             return
-        })
-
-
-        return
+        } catch(erro) {
+            if(erro) {
+                console.log('Falha ao buscar o produto', erro)
+    
+                res.statusCode = 500
+    
+                const resposta = {
+                    erro: {
+                        mensagem: `Falha ao buscar o produto ${produto.nome}`,
+                    }
+                }
+    
+                res.end(JSON.stringify(resposta))
+    
+                return
+            }
+        }
     }
 
     res.statusCode = 404

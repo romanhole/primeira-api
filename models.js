@@ -21,7 +21,8 @@ export const Produto = sequelize.define('produto', {
     },
     nome: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
+        unique: true
     },
     preco: {
         type: Sequelize.DOUBLE,
@@ -31,10 +32,12 @@ export const Produto = sequelize.define('produto', {
 
 export async function criaProduto(produto) {
     try {
-        await Produto.create(produto)
-        console.log(`Produto ${produto.nome} criado com sucesso`)
+        const resultado = await Produto.create(produto)
+        console.log(`Produto ${resultado.nome} criado com sucesso`)
+        return resultado
     } catch (erro) {
         console.log('Falha ao criar o produto', erro)
+        throw erro
     }
 }
 
@@ -44,5 +47,37 @@ export async function leProdutos() {
         console.log(`Produtos consultados com sucesso!`, resultado)
     } catch (erro) {
         console.log('Falha ao buscar o produto', erro)
+    }
+}
+
+export async function leProdutoPorId(id) {
+    try {
+        const resultado = await Produto.findByPk(id)
+        console.log(`Produto consultado com sucesso!`, resultado)
+        return resultado
+    } catch (erro) {
+        console.log('Falha ao buscar o produto', erro)
+        throw erro
+    }
+}
+
+export async function atualizaProdutoPorId(id, dadosProduto) {
+    try {
+        const resultado = await Produto.update(dadosProduto, { where: { id: id } })
+        console.log(`Produto atualizado com sucesso!`, resultado)
+        return resultado
+    } catch (erro) {
+        console.log('Falha ao atualizar o produto', erro)
+        throw erro
+    }
+}
+
+export async function deletaProdutoPorId(id) {
+    try {
+        const resultado = await Produto.destroy({ where: { id: id } })
+        console.log(`Produto deletado com sucesso!`, resultado)
+    } catch (erro) {
+        console.log('Falha ao deletar o produto', erro)
+        throw erro
     }
 }
