@@ -2,7 +2,7 @@ import http from 'http'
 import fs from 'fs'
 import rotas from './routes.js'
 import sqlite3 from 'sqlite3'
-import { sequelize } from './models.js'
+import { sequelize, criaPedido, lePedidos } from './models.js'
 
 const db = new sqlite3.Database('./tic.db', (erro) => {
     if (erro) {
@@ -33,6 +33,22 @@ fs.readFile('./mensagem.txt', 'utf-8', (erro, conteudo) => {
 
 async function iniciaServidorHttp(mensagem) {
     await sequelize.sync()
+
+    await criaPedido({
+        valorTotal: 13.00,
+        produtos: [
+            {
+                id: 2,
+                quantidade: 1
+            },
+            {
+                id: 4,
+                quantidade: 2
+            },
+        ]
+    })
+
+    await lePedidos()
 
     const servidor = http.createServer((req, res) => {
         rotas(req, res, { mensagem })

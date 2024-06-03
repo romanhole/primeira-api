@@ -92,3 +92,88 @@ export async function deletaProdutoPorId(id) {
         throw erro
     }
 }
+
+const Pedido = sequelize.define('pedido', {
+    id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    valorTotal: {
+        type: Sequelize.DOUBLE,
+        allowNull: false
+    },
+    estado: {
+        type: Sequelize.STRING,
+        allowNull: false
+    }
+})
+
+const ProdutosPedido = sequelize.define('produtos_pedido', {
+    id: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    quantidade: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+    },
+    preco: {
+        type: Sequelize.DOUBLE,
+        allowNull: false
+    }
+})
+
+Produto.belongsToMany(Pedido, { through: ProdutosPedido })
+Pedido.belongsToMany(Produto, { through: ProdutosPedido })
+
+export async function criaPedido(novoPedido) {
+    try {
+        const pedido = await Pedido.create({
+            valorTotal: novoPedido.valorTotal,
+            estado: 'ENCAMINHADO'
+        })
+
+        for (const prod of novoPedido.produtos) {
+            const produto = await Produto.findByPk(prod.id)
+            if (produto) {
+                pedido.addProduto(produto, {
+                    through: {
+                        quantidade: prod.quantidade,
+                        preco: produto.preco
+                    }
+                })
+            }
+        }
+
+        console.log(`Pedido ${pedido.id} criado com sucesso`)
+
+        return pedido
+    } catch (erro) {
+        console.log('Falha ao criar Pedido', erro)
+        throw erro
+    }
+}
+
+export async function lePedidos() {
+    try {
+        const resultado = await ProdutosPedido.findAll()
+        console.log(`Pedidos consultados com sucesso!`, resultado)
+        return resultado
+    } catch (erro) {
+        console.log('Falha ao consultar pedidos', erro)
+        throw erro
+    }
+}
+
+export async function lePedidoPorId(id) {
+    try {
+        const resultado = await Pedido.findByPk(id)
+        console.log(`Pedido consultado com sucesso!`, resultado)
+        return resultado
+    } catch (erro) {
+        console.log('Falha ao consultar pedido', erro)
+        throw erro
+    }
+}
