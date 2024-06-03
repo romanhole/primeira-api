@@ -45,8 +45,10 @@ export async function leProdutos() {
     try {
         const resultado = await Produto.findAll()
         console.log(`Produtos consultados com sucesso!`, resultado)
+        return resultado
     } catch (erro) {
         console.log('Falha ao buscar o produto', erro)
+        throw erro
     }
 }
 
@@ -63,8 +65,17 @@ export async function leProdutoPorId(id) {
 
 export async function atualizaProdutoPorId(id, dadosProduto) {
     try {
-        const resultado = await Produto.update(dadosProduto, { where: { id: id } })
-        console.log(`Produto atualizado com sucesso!`, resultado)
+        const resultado = await Produto.findByPk(id)
+        if (resultado?.id) {
+            for ( const chave in dadosProduto ) {
+                if (chave in resultado) {
+                    resultado[chave] = dadosProduto[chave]
+                }
+            }
+            resultado.save()
+            console.log(`Produto atualizado com sucesso!`, resultado)
+        }
+        
         return resultado
     } catch (erro) {
         console.log('Falha ao atualizar o produto', erro)

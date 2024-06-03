@@ -98,7 +98,7 @@ export default async function rotas(req, res, dado) {
         return
     }
 
-    if(req.method === 'PATCH' && req.url.split('/')[1] === '/produtos' && !isNaN(req.url.split('/')[2])) {
+    if(req.method === 'PATCH' && req.url.split('/')[1] === 'produtos' && !isNaN(req.url.split('/')[2])) {
         const corpo = []
 
         req.on('data', (parte) => {
@@ -128,6 +128,10 @@ export default async function rotas(req, res, dado) {
                 const resposta = await atualizaProdutoPorId(id, produto)
 
                 res.statusCode = 200
+
+                if (!resposta) {
+                    res.statusCode = 404
+                }
 
                 res.end(JSON.stringify(resposta))
 
@@ -169,13 +173,17 @@ export default async function rotas(req, res, dado) {
         return
     }
 
-    if(req.method === 'DELETE' && req.url.split('/')[1] === '/produtos' && !isNaN(req.url.split('/')[2])) {
+    if(req.method === 'DELETE' && req.url.split('/')[1] === 'produtos' && !isNaN(req.url.split('/')[2])) {
         const id = req.url.split('/')[2]
 
         try {
-            const resposta = await deletaProdutoPorId(id)
+            const encontrado = await deletaProdutoPorId(id)
 
             res.statusCode = 204
+
+            if (!encontrado) {
+                res.statusCode = 404
+            }
 
             res.end()
 
@@ -188,7 +196,7 @@ export default async function rotas(req, res, dado) {
     
                 const resposta = {
                     erro: {
-                        mensagem: `Falha ao remover o produto ${produto.nome}`,
+                        mensagem: `Falha ao remover o produto ${id}`,
                     }
                 }
     
@@ -199,13 +207,17 @@ export default async function rotas(req, res, dado) {
         }
     }
 
-    if(req.method === 'GET' && req.url.split('/')[1] === '/produtos' && !isNaN(req.url.split('/')[2])) {
+    if(req.method === 'GET' && req.url.split('/')[1] === 'produtos' && !isNaN(req.url.split('/')[2])) {
         const id = req.url.split('/')[2]
 
         try {
             const resposta = await leProdutoPorId(id)
 
             res.statusCode = 200
+
+            if (!resposta) { 
+                res.statusCode = 404
+            }
 
             res.end(JSON.stringify(resposta))
 
@@ -218,7 +230,35 @@ export default async function rotas(req, res, dado) {
     
                 const resposta = {
                     erro: {
-                        mensagem: `Falha ao buscar o produto ${produto.nome}`,
+                        mensagem: `Falha ao buscar o produto ${id}`,
+                    }
+                }
+    
+                res.end(JSON.stringify(resposta))
+    
+                return
+            }
+        }
+    }
+
+    if(req.method === 'GET' && req.url === '/produtos') {
+        try {
+            const resposta = await leProdutos()
+
+            res.statusCode = 200
+
+            res.end(JSON.stringify(resposta))
+
+            return
+        } catch(erro) {
+            if(erro) {
+                console.log('Falha ao buscar os produtos', erro)
+    
+                res.statusCode = 500
+    
+                const resposta = {
+                    erro: {
+                        mensagem: `Falha ao buscar os produtos`,
                     }
                 }
     
